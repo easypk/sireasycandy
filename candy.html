@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imtiaz Ahmad Easy</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            color: #ff6600;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(8, 50px);
+            grid-template-rows: repeat(8, 50px);
+            gap: 2px;
+            margin: 20px auto;
+            width: 416px;
+            background: #ddd;
+            padding: 5px;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            user-select: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Imtiaz Ahmad Easy</h1>
+    <div class="grid" id="grid"></div>
+    <button id="hintButton">Get AI Hint</button>
+    <script>
+        const grid = document.getElementById("grid");
+        const width = 8;
+        const candies = ["🍎", "🍌", "🍇", "🍒", "🍊"];
+        let squares = [];
+        let draggedElement = null;
+
+        function createBoard() {
+            for (let i = 0; i < width * width; i++) {
+                const square = document.createElement("div");
+                square.classList.add("cell");
+                square.setAttribute("id", i);
+                square.setAttribute("draggable", true);
+                square.innerText = candies[Math.floor(Math.random() * candies.length)];
+                square.addEventListener("dragstart", dragStart);
+                square.addEventListener("dragover", dragOver);
+                square.addEventListener("drop", dragDrop);
+                grid.appendChild(square);
+                squares.push(square);
+            }
+        }
+
+        function dragStart(event) {
+            draggedElement = event.target;
+        }
+
+        function dragOver(event) {
+            event.preventDefault();
+        }
+
+        function dragDrop(event) {
+            let target = event.target;
+            let draggedCandy = draggedElement.innerText;
+            let targetCandy = target.innerText;
+            draggedElement.innerText = targetCandy;
+            target.innerText = draggedCandy;
+            checkMatches();
+        }
+
+        function checkMatches() {
+            for (let i = 0; i < width * width; i++) {
+                let rowMatch = [i, i + 1, i + 2];
+                let columnMatch = [i, i + width, i + width * 2];
+                
+                if (i % width < width - 2 && rowMatch.every(index => squares[index] && squares[index].innerText === squares[i].innerText)) {
+                    rowMatch.forEach(index => squares[index].innerText = "");
+                }
+                
+                if (i < width * (width - 2) && columnMatch.every(index => squares[index] && squares[index].innerText === squares[i].innerText)) {
+                    columnMatch.forEach(index => squares[index].innerText = "");
+                }
+            }
+            dropCandies();
+        }
+
+        function dropCandies() {
+            for (let i = width * width - 1; i >= width; i--) {
+                if (squares[i].innerText === "") {
+                    squares[i].innerText = squares[i - width].innerText;
+                    squares[i - width].innerText = "";
+                }
+            }
+            setTimeout(() => refillBoard(), 200);
+        }
+
+        function refillBoard() {
+            for (let i = 0; i < width; i++) {
+                if (squares[i].innerText === "") {
+                    squares[i].innerText = candies[Math.floor(Math.random() * candies.length)];
+                }
+            }
+        }
+
+        createBoard();
+
+        const HF_TOKEN = "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"; // Replace with your real token (store securely in backend for production)
+        const HF_API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn";
+
+        async function getAIHint(inputText) {
+            try {
+                const response = await fetch(HF_API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${HF_TOKEN}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ inputs: inputText })
+                });
+
+                const data = await response.json();
+                console.log("AI Hint:", data);
+                alert("AI Suggestion: " + (data[0]?.summary_text || "No suggestion available."));
+            } catch (error) {
+                console.error("Error fetching AI response:", error);
+            }
+        }
+
+        document.getElementById("hintButton").addEventListener("click", function() {
+            getAIHint("How can I make a move in Candy Crush?");
+        });
+    </script>
+</body>
+</html>
